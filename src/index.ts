@@ -6,6 +6,8 @@ import { logger } from "./middleware/logger.js";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import config from "./config/env.js";
+import notFound from "./middleware/notFound.js";
+import errorHandler from "./middleware/errorHandler.js";
 
 connectDB();
 
@@ -40,8 +42,12 @@ app.get("/api/about", (req: Request, res: Response) => {
 app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
 
+app.use(notFound);
+
+app.use(errorHandler);
+
 app.listen(config.port, () => {
   console.log(
-    `Server is running in ${config.nodeEnv} mode on port ${config.port}`,
+    `Server is running in ${config.nodeEnv} mode on port: ${config.port}`,
   );
 });

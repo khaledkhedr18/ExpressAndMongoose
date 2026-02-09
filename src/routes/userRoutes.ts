@@ -6,14 +6,14 @@ import {
   deleteUser,
   getUser,
   getUsers,
-  patchUser,
-  postUser,
+  updateUser,
+  createUser,
 } from "../controllers/userController.js";
 
 const router = Router();
 
-router.route("/").get(getUsers).post(postUser);
+router.route("/").get(getUsers).post(createUser);
 
-router.route("/:id").get(getUser).delete(deleteUser).patch(patchUser);
+router.route("/:id").get(getUser).delete(deleteUser).patch(updateUser);
 
 export default router;
