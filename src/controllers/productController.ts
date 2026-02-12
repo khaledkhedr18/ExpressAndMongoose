@@ -1,6 +1,7 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import Product from "../models/product.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import AppError from "../utils/AppError.js";
 
 /**
  * @desc Get all products with filtering, sorting, pagination
@@ -62,23 +63,23 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
  * @access Public
  */
 
-export const getProduct = asyncHandler(async (req: Request, res: Response) => {
-  const product = await Product.findById(req.params.id);
+export const getProduct = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const product = await Product.findById(req.params.id);
 
-  if (!product) {
-    res.status(404).json({
-      success: false,
-      error: `Couldn't find a product with ${req.params.id}`,
+    if (!product) {
+      return next(
+        new AppError(`Product with ID ${req.params.id} was not found`, 404),
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Item with id: ${req.params.id} was found!`,
+      data: product,
     });
-    return;
-  }
-
-  res.status(200).json({
-    success: true,
-    message: `Item with id: ${req.params.id} was found!`,
-    data: product,
-  });
-});
+  },
+);
 
 /**
  * @desc Create a new product.
@@ -105,15 +106,13 @@ export const createProduct = asyncHandler(
  */
 
 export const deleteProduct = asyncHandler(
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     const product = await Product.findByIdAndDelete(req.params.id);
 
     if (!product) {
-      res.status(404).json({
-        success: false,
-        error: `Product with id: ${req.params.id} not Found`,
-      });
-      return;
+      return next(
+        new AppError(`Couldn't find product with id: ${req.params}`, 404),
+      );
     }
 
     res.status(200).json({
@@ -130,18 +129,16 @@ export const deleteProduct = asyncHandler(
  */
 
 export const updateProduct = asyncHandler(
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
 
     if (!product) {
-      res.status(404).json({
-        success: false,
-        error: `Couldn't find a product with id ${req.params.id}`,
-      });
-      return;
+      return next(
+        new AppError(`Couldn't find product with id: ${req.params}`, 404),
+      );
     }
 
     res.status(200).json({

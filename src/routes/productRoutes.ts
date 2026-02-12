@@ -7,11 +7,25 @@ import {
   updateProduct,
   deleteProduct,
 } from "../controllers/productController.js";
+import {
+  createProductRules,
+  getProductRules,
+  getProductsQueryRules,
+  updateProductRules,
+} from "../middleware/validators/productValidator.js";
+import validate from "../middleware/validators/validate.js";
 
 const router = Router();
 
-router.route("/").get(getProducts).post(validateProduct, createProduct);
+router
+  .route("/")
+  .get(getProductsQueryRules, validate, getProducts)
+  .post(createProductRules, validate, createProduct);
 
-router.route("/:id").get(getProduct).patch(updateProduct).delete(deleteProduct);
+router
+  .route("/:id")
+  .get(getProductRules, validate, getProduct)
+  .patch(getProductRules, updateProductRules, validate, updateProduct)
+  .delete(getProductRules, validate, deleteProduct);
 
 export default router;
