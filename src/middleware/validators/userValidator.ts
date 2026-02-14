@@ -1,5 +1,3 @@
-// src/middleware/validators/userValidator.ts
-
 import { body, param } from "express-validator";
 
 export const createUserRules = [

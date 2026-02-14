@@ -1,5 +1,3 @@
-// src/middleware/validators/productValidator.ts
-
 import { body, param, query } from "express-validator";
 
 export const createProductRules = [

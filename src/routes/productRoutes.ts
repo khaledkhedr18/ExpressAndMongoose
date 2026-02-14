@@ -1,5 +1,4 @@
 import { Router, Request, Response } from "express";
-import { validateProduct } from "../middleware/validateProduct.js";
 import {
   getProduct,
   getProducts,

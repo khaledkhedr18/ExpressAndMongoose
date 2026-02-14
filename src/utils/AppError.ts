@@ -1,5 +1,3 @@
-import { appendFile, stat } from "node:fs";
-
 class AppError extends Error {
   statusCode: number;
   status: string;
