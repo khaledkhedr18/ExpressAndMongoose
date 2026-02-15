@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import Product from "../models/product.js";
+import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import AppError from "../utils/AppError.js";
 
@@ -40,7 +40,9 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   const skip = (pageNum - 1) * limitNum;
 
   const productsResult = await Product.find(filter)
-    .sort(sort as string)
+    .populate("category", "name")
+    .populate("createdBy", "firstName lastName email")
+    .sort((sort as string) || "-createdAt")
     .skip(skip)
     .limit(limitNum);
 
@@ -90,7 +92,6 @@ export const getProduct = asyncHandler(
 export const createProduct = asyncHandler(
   async (req: Request, res: Response) => {
     const product = await Product.create(req.body);
-    console.log(product);
     res.status(201).json({
       success: true,
       message: `Product created with name: ${product.name}`,

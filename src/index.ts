@@ -3,11 +3,11 @@ import type { Request, Response } from "express";
 import productRoutes from "./routes/productRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import { logger } from "./middleware/logger.js";
-import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import config from "./config/env.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
 
 connectDB();
 
@@ -41,6 +41,7 @@ app.get("/api/about", (req: Request, res: Response) => {
 
 app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/categories", categoryRoutes);
 
 app.use(notFound);
 
