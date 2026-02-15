@@ -67,7 +67,10 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
 
 export const getProduct = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id)
+      .populate("category", "name description")
+      .populate("createdBy", "firstName lastName email")
+      .populate("reviews.user", "firstName email");
 
     if (!product) {
       return next(

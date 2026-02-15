@@ -62,11 +62,8 @@ const productSchema = new Schema<IProduct>(
     },
     category: {
       type: Schema.Types.ObjectId,
+      ref: "Category",
       required: [true, "Product category is required!"],
-      enum: {
-        values: ["electronics", "furniture", "clothing", "books", "other"],
-        message: "{VALUE} is not a valid category",
-      },
     },
     createdBy: {
       type: Schema.Types.ObjectId,
