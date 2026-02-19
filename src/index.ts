@@ -13,6 +13,8 @@ connectDB();
 
 const app = express();
 
+app.set("query parser", "extended");
+
 app.use(express.json());
 app.use(logger);
 

@@ -2,49 +2,33 @@ import { NextFunction, Request, Response } from "express";
 import User from "../models/User.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import AppError from "../utils/AppError.js";
+import ApiFeatures from "../utils/apiFeatures.js";
 
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-  const { role, search, limit, sort, page, minAge, maxAge } = req.query;
-  let filter: Record<string, unknown> = {};
+  const features = new ApiFeatures(
+    User.find(),
+    req.query as Record<string, string>,
+  )
+    .filter()
+    .search(["firstName", "lastName", "email"])
+    .sort()
+    .selectFields()
+    .paginate();
 
-  if (role) {
-    filter.role = role;
-  }
+  await features.countTotal();
 
-  if (minAge || maxAge) {
-    if (minAge) {
-      (filter.age as Record<string, Number>).$gte = Number(minAge);
-    }
-    if (maxAge) {
-      (filter.age as Record<string, Number>).$lte = Number(maxAge);
-    }
-  }
+  const users = await features.query;
 
-  if (search) {
-    filter.name = {
-      $regex: search,
-      $options: "i",
-    };
-  }
-
-  const pageNum = parseInt(page as string) || 1;
-  const limitNum = parseInt(limit as string) || 0;
-  const skip = (pageNum - 1) * limitNum;
-
-  const users = await User.find(filter)
-    .sort(sort as string)
-    .limit(limitNum)
-    .skip(skip);
-
-  const total = await User.countDocuments(filter);
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
 
   res.status(200).json({
     success: true,
-    data: users,
     count: users.length,
-    total,
-    page: pageNum,
-    pages: Math.ceil(total / limitNum),
+    total: features.total,
+    page: page,
+    pages: Math.ceil(features.total / limit),
+    data: users,
   });
 });
 

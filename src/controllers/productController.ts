@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import AppError from "../utils/AppError.js";
+import ApiFeatures from "../utils/apiFeatures.js";
 
 /**
  * @desc Get all products with filtering, sorting, pagination
@@ -10,50 +11,30 @@ import AppError from "../utils/AppError.js";
  */
 
 export const getProducts = asyncHandler(async (req: Request, res: Response) => {
-  const { category, minPrice, maxPrice, sort, page, limit, search } = req.query;
+  const features = new ApiFeatures(
+    Product.find(),
+    req.query as Record<string, string>,
+  )
+    .filter()
+    .search(["name", "description"])
+    .sort()
+    .selectFields()
+    .paginate();
 
-  const filter: Record<string, unknown> = {};
+  await features.countTotal();
 
-  if (category) {
-    filter.category = category;
-  }
+  const products = await features.query;
 
-  if (minPrice || maxPrice) {
-    filter.price = {};
-    if (minPrice) {
-      (filter.price as Record<string, Number>).$gte = Number(minPrice);
-    }
-    if (maxPrice) {
-      (filter.price as Record<string, Number>).$lte = Number(maxPrice);
-    }
-  }
-
-  if (search) {
-    filter.name = {
-      $regex: search,
-      $options: "i",
-    };
-  }
-
-  const pageNum = parseInt(page as string) || 1;
-  const limitNum = parseInt(limit as string) || 0;
-  const skip = (pageNum - 1) * limitNum;
-
-  const productsResult = await Product.find(filter)
-    .sort((sort as string) || "-createdAt")
-    .skip(skip)
-    .limit(limitNum);
-
-  const total = await Product.countDocuments(filter);
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
 
   res.status(200).json({
     success: true,
-    count: productsResult.length,
-    total,
-    appliedFilter: filter,
-    page: pageNum,
-    pages: Math.ceil(total / limitNum),
-    data: productsResult,
+    count: products.length,
+    total: features.total,
+    page,
+    pages: Math.ceil(features.total / limit),
+    data: products,
   });
 });
 

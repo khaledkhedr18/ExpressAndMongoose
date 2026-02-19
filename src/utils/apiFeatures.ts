@@ -25,7 +25,18 @@ class ApiFeatures<T> {
       (match) => `$${match}`,
     );
 
-    this.query = this.query.find(JSON.parse(queryStr));
+    const parsed = JSON.parse(queryStr);
+    const convertValues = (obj: Record<string, any>): Record<string, any> => {
+      for (const key in obj) {
+        if (typeof obj[key] === "object" && obj[key] !== null) {
+          convertValues(obj[key]);
+        } else if (typeof obj[key] === "string" && !isNaN(Number(obj[key]))) {
+          obj[key] = Number(obj[key]);
+        }
+      }
+      return obj;
+    };
+    this.query = this.query.find(convertValues(parsed));
     return this;
   }
 
@@ -43,7 +54,7 @@ class ApiFeatures<T> {
 
   sort(): this {
     if (this.queryString.sort) {
-      const sortBy = this.queryString.fields.split(",").join(" ");
+      const sortBy = this.queryString.sort.split(",").join(" ");
       this.query = this.query.sort(sortBy);
     } else {
       this.query = this.query.sort("-createdAt");
@@ -64,7 +75,7 @@ class ApiFeatures<T> {
 
   paginate(): this {
     const page = parseInt(this.queryString.page) || 1;
-    const limit = parseInt(this.queryString.limit) || 0;
+    const limit = parseInt(this.queryString.limit) || 10;
     const skip = (page - 1) * limit;
 
     this.query = this.query.skip(skip).limit(limit);
