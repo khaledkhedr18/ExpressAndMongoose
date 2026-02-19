@@ -16,6 +16,12 @@ export const createProductRules = [
     .isFloat({ min: 0 })
     .withMessage("Price must be a positive number"),
 
+  body("quantity")
+    .notEmpty()
+    .withMessage("Quantity is required")
+    .isFloat({ min: 0 })
+    .withMessage("Quantity must be a positive number"),
+
   body("category").notEmpty().withMessage("Category is required"),
 
   body("description")

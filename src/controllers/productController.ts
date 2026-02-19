@@ -40,8 +40,6 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   const skip = (pageNum - 1) * limitNum;
 
   const productsResult = await Product.find(filter)
-    .populate("category", "name")
-    .populate("createdBy", "firstName lastName email")
     .sort((sort as string) || "-createdAt")
     .skip(skip)
     .limit(limitNum);
@@ -67,10 +65,7 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
 
 export const getProduct = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const product = await Product.findById(req.params.id)
-      .populate("category", "name description")
-      .populate("createdBy", "firstName lastName email")
-      .populate("reviews.user", "firstName email");
+    const product = await Product.findById(req.params.id);
 
     if (!product) {
       return next(

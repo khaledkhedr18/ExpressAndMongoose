@@ -28,4 +28,16 @@ const categorySchema = new Schema<ICategory>(
 
 const Category = mongoose.model<ICategory>("Category", categorySchema);
 
+categorySchema.pre("findOneAndDelete", async function () {
+  const categoryId = this.getQuery()["_id"];
+
+  await mongoose.model("Product").deleteMany({ category: categoryId });
+});
+
+categorySchema.pre("findOneAndDelete", function (doc) {
+  if (doc) {
+    console.log(`Category "${doc.name}" deleted. Related products removed`);
+  }
+});
+
 export default Category;

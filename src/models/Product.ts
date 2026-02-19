@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Query } from "mongoose";
 
 export interface IReview {
   user: mongoose.Types.ObjectId;
@@ -13,7 +13,9 @@ export interface IProduct extends Document {
   description?: string;
   category: mongoose.Types.ObjectId;
   createdBy: mongoose.Types.ObjectId;
+  quantity: number;
   inStock: boolean;
+  slug: string;
   reviews: IReview[];
   averageRating: number;
   createdAt: Date;
@@ -27,6 +29,7 @@ const reviewSchema = new Schema<IReview>(
       ref: "User",
       required: [true, "Review must belong to a user"],
     },
+
     rating: {
       type: Number,
       required: [true, "Review must have a rating"],
@@ -50,6 +53,14 @@ const productSchema = new Schema<IProduct>(
       required: [true, "Product Name is required!"],
       trim: true,
       maxlength: [100, "Product Name cannot exceed 100 characters!"],
+    },
+    slug: {
+      type: String,
+      unique: true,
+    },
+    quantity: {
+      type: Number,
+      required: true,
     },
     price: {
       type: Number,
@@ -88,6 +99,53 @@ const productSchema = new Schema<IProduct>(
     toObject: { virtuals: true },
   },
 );
+
+productSchema.pre("save", function () {
+  if (this.isModified("name")) {
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  }
+});
+
+productSchema.pre("save", function () {
+  if (this.quantity === 0) {
+    this.inStock = false;
+  }
+});
+
+productSchema.pre(/^find/, function (this: Query<any, IProduct>) {
+  this.populate("category", "name").populate(
+    "createdBy",
+    "firstName lastName email",
+  );
+});
+
+productSchema.pre(/^find/, function (this: Query<IProduct[], IProduct>) {
+  this.where({ inStock: true });
+});
+
+
+
+productSchema.post("save", function (doc) {
+  console.log(`Product ${doc.name} was saved with id: ${doc._id}`);
+});
+
+productSchema.post("save", async function (doc) {
+  if (doc.reviews.length > 0) {
+    const totalRating = doc.reviews.reduce((sum: number, review: IReview) => {
+      return sum + review.rating;
+    }, 0);
+    doc.averageRating = totalRating / doc.reviews.length;
+  }
+
+  await Product.updateOne(
+    { _id: doc._id },
+    { averageRating: doc.averageRating },
+  );
+});
+
 
 const Product = mongoose.model<IProduct>("Product", productSchema);
 

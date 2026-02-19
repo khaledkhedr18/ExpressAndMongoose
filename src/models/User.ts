@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Query } from "mongoose";
+import bcrypt from "bcrypt";
 
 export interface IUser extends Document {
   firstName: string;
@@ -75,6 +76,29 @@ const userSchema = new Schema<IUser>(
 
 userSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
+});
+
+userSchema.pre<IUser>("save", async function () {
+  if (!this.isModified("password")) {
+    return;
+  }
+
+  const salt = await bcrypt.genSalt(12);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+userSchema.pre(/^find/, function (this: Query<IUser[], IUser>) {
+  this.where({ isActive: true });
+});
+
+userSchema.pre("findOneAndDelete", async function () {
+  const userId = this.getQuery()["_id"];
+
+  await mongoose.model("Product").deleteMany({ createdBy: userId });
+
+  await mongoose
+    .model("Product")
+    .updateMany({}, { $pull: { reviews: { user: userId } } });
 });
 
 const User = mongoose.model<IUser>("User", userSchema);
