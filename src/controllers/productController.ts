@@ -3,6 +3,8 @@ import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import AppError from "../utils/AppError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
+import fs from "fs";
+import path from "path";
 
 /**
  * @desc Get all products with filtering, sorting, pagination
@@ -70,6 +72,20 @@ export const getProduct = asyncHandler(
 
 export const createProduct = asyncHandler(
   async (req: Request, res: Response) => {
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+    if (files?.image) {
+      req.body.image = files.image[0].filename;
+    }
+
+    if (files?.gallery) {
+      req.body.images = files.gallery.map((file) => file.filename);
+    }
+
+    if (req.file) {
+      req.body.image = req.file.filename;
+    }
+
     const product = await Product.create(req.body);
     res.status(201).json({
       success: true,
@@ -110,6 +126,28 @@ export const deleteProduct = asyncHandler(
 
 export const updateProduct = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    const existingProduct = await Product.findById(req.params.id);
+
+    if (!existingProduct) {
+      return next(new AppError("Product not found", 404));
+    }
+
+    if (req.file) {
+      if (
+        existingProduct.image &&
+        existingProduct.image !== "default-product.png"
+      ) {
+        const oldImagePath = path.join(
+          "uploads/products",
+          existingProduct.image,
+        );
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+      req.body.image = req.file.filename;
+    }
+
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,

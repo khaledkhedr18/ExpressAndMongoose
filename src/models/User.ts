@@ -20,14 +20,14 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: [true, "First Name is required"],
       trim: true,
-      minlength: [2, "Name must be at least 2 charatcters"],
+      minlength: [2, "Name must be at least 2 characters"],
       maxlength: [50, "Name cannot exceed 50 characters"],
     },
     lastName: {
       type: String,
       required: [true, "Last Name is required"],
       trim: true,
-      minlength: [2, "Name must be at least 2 charatcters"],
+      minlength: [2, "Name must be at least 2 characters"],
       maxlength: [50, "Name cannot exceed 50 characters"],
     },
     email: {
@@ -43,9 +43,9 @@ const userSchema = new Schema<IUser>(
     },
     age: {
       type: Number,
-      required: [true, "Age is required"],
       min: [0, "Age cannot be negative-"],
       max: [100, "Age cannot exceed 100"],
+      default: 24
     },
     role: {
       type: String,

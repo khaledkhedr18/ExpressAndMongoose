@@ -8,15 +8,20 @@ import config from "./config/env.js";
 import notFound from "./middleware/notFound.js";
 import errorHandler from "./middleware/errorHandler.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 connectDB();
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.set("query parser", "extended");
 
 app.use(express.json());
 app.use(logger);
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/", (req: Request, res: Response) => {
   res.json({

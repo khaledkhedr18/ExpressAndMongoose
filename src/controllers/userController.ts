@@ -4,6 +4,11 @@ import asyncHandler from "../utils/asyncHandler.js";
 import AppError from "../utils/AppError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
 
+/**
+ * @desc Get all users with filtering, sorting, and pagination.
+ * @route GET /api/users
+ * @access Public
+ */
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
   const features = new ApiFeatures(
     User.find(),
@@ -32,6 +37,11 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+/**
+ * @desc Get a single user by ID.
+ * @route GET /api/users/:id
+ * @access Public
+ */
 export const getUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const user = await User.findById(req.params.id);
@@ -50,6 +60,11 @@ export const getUser = asyncHandler(
   },
 );
 
+/**
+ * @desc Create a new user.
+ * @route POST /api/users
+ * @access Public
+ */
 export const createUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const user = await User.create(req.body);
@@ -67,6 +82,11 @@ export const createUser = asyncHandler(
   },
 );
 
+/**
+ * @desc Delete a user by ID.
+ * @route DELETE /api/users/:id
+ * @access Public
+ */
 export const deleteUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.params.id;
@@ -84,6 +104,11 @@ export const deleteUser = asyncHandler(
   },
 );
 
+/**
+ * @desc Update a user by ID.
+ * @route PATCH /api/users/:id
+ * @access Public
+ */
 export const updateUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {

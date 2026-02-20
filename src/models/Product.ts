@@ -17,6 +17,8 @@ export interface IProduct extends Document {
   inStock: boolean;
   slug: string;
   reviews: IReview[];
+  image: string;
+  images: string[];
   averageRating: number;
   createdAt: Date;
   updatedAt: Date;
@@ -92,6 +94,19 @@ const productSchema = new Schema<IProduct>(
       min: 0,
       max: 5,
     },
+    image: {
+      type: String,
+      default: "default-product.png",
+    },
+    images: {
+      type: [String],
+      validate: {
+        validator: function (arr: string[]) {
+          return arr.length <= 5;
+        },
+        message: "Cannort have more than 5 images",
+      },
+    },
   },
   {
     timestamps: true,
@@ -126,8 +141,6 @@ productSchema.pre(/^find/, function (this: Query<IProduct[], IProduct>) {
   this.where({ inStock: true });
 });
 
-
-
 productSchema.post("save", function (doc) {
   console.log(`Product ${doc.name} was saved with id: ${doc._id}`);
 });
@@ -145,7 +158,6 @@ productSchema.post("save", async function (doc) {
     { averageRating: doc.averageRating },
   );
 });
-
 
 const Product = mongoose.model<IProduct>("Product", productSchema);
 

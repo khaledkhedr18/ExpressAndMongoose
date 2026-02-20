@@ -4,6 +4,11 @@ import AppError from "../utils/AppError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { NextFunction, Request, Response } from "express";
 
+/**
+ * @desc Get all categories with filtering, sorting, and pagination.
+ * @route GET /api/categories
+ * @access Public
+ */
 export const getCategories = asyncHandler(
   async (req: Request, res: Response) => {
     const { sort, page, limit, search } = req.query;
@@ -39,6 +44,11 @@ export const getCategories = asyncHandler(
   },
 );
 
+/**
+ * @desc Get a single category by ID.
+ * @route GET /api/categories/:id
+ * @access Public
+ */
 export const getCategory = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const category = await Category.findById(req.params.id);
@@ -57,6 +67,11 @@ export const getCategory = asyncHandler(
   },
 );
 
+/**
+ * @desc Create a new category.
+ * @route POST /api/categories
+ * @access Public
+ */
 export const createCategory = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const category = await Category.create(req.body);
@@ -69,6 +84,11 @@ export const createCategory = asyncHandler(
   },
 );
 
+/**
+ * @desc Update a category by ID.
+ * @route PATCH /api/categories/:id
+ * @access Public
+ */
 export const updateCategory = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const category = await Category.findByIdAndUpdate(req.params.id, req.body, {
@@ -90,6 +110,11 @@ export const updateCategory = asyncHandler(
   },
 );
 
+/**
+ * @desc Delete a category by ID.
+ * @route DELETE /api/categories/:id
+ * @access Public
+ */
 export const deleteCategory = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const category = await Category.findByIdAndDelete(req.params.id);
