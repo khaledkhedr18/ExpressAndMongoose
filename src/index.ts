@@ -1,26 +1,59 @@
 import express from "express";
 import type { Request, Response } from "express";
-import productRoutes from "./routes/productRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import { logger } from "./middleware/logger.js";
-import connectDB from "./config/db.js";
-import config from "./config/env.js";
-import notFound from "./middleware/notFound.js";
-import errorHandler from "./middleware/errorHandler.js";
-import categoryRoutes from "./routes/categoryRoutes.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+
+import connectDB from "./config/db.js";
+import config from "./config/env.js";
+
+import productRoutes from "./routes/productRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
+
+import { logger } from "./middleware/logger.js";
+import notFound from "./middleware/notFound.js";
+import errorHandler from "./middleware/errorHandler.js";
 
 connectDB();
 
 const app = express();
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
+
+const globalLimiter = rateLimit({
+  windowMs: config.rateLimitWindowMs,
+  max: config.rateLimitMax,
+  message: {
+    success: false,
+    error: "Too many requests, please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(globalLimiter);
+
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true }));
+
+const corsOptions = {
+  origin: config.isDevelopment ? "*" : config.allowedApps,
+  methods: ["GET", "POST", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+app.use(cors(corsOptions));
+
+app.use(logger);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-app.set("query parser", "extended");
-
-app.use(express.json());
-app.use(logger);
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/", (req: Request, res: Response) => {
@@ -51,7 +84,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/categories", categoryRoutes);
 
 app.use(notFound);
-
 app.use(errorHandler);
 
 app.listen(config.port, () => {

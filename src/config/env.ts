@@ -13,6 +13,7 @@ interface Config {
   isDevelopment: boolean;
   isProduction: boolean;
   isTest: boolean;
+  allowedApps: string[];
 }
 
 const config: Config = {
@@ -26,6 +27,7 @@ const config: Config = {
   isDevelopment: process.env.NODE_ENV === "development",
   isProduction: process.env.NODE_ENV === "production",
   isTest: process.env.NODE_ENV === "test",
+  allowedApps: JSON.parse(process.env.ALLOWED_APPS || "[]"),
 };
 
 const requiredVars = ["MONGO_URI", "JWT_SECRET"];
