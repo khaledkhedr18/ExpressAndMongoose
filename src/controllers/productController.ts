@@ -5,6 +5,7 @@ import AppError from "../utils/AppError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
 import fs from "fs";
 import path from "path";
+import { AuthRequest } from "../middleware/auth.js";
 
 /**
  * @desc Get all products with filtering, sorting, pagination
@@ -72,6 +73,10 @@ export const getProduct = asyncHandler(
 
 export const createProduct = asyncHandler(
   async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+
+    req.body.createdBy = authReq.user?.userId;
+
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     if (files?.image) {

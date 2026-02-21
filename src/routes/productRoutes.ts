@@ -14,24 +14,32 @@ import {
 } from "../middleware/validators/productValidator.js";
 import validate from "../middleware/validators/validate.js";
 import upload from "../middleware/upload.js";
+import { protect } from "../middleware/auth.js";
 
 const router = Router();
 
 router
   .route("/")
   .get(getProductsQueryRules, validate, getProducts)
-  .post(upload.single("image"), createProductRules, validate, createProduct);
+  .post(
+    protect,
+    upload.single("image"),
+    createProductRules,
+    validate,
+    createProduct,
+  );
 
 router
   .route("/:id")
   .get(getProductRules, validate, getProduct)
   .patch(
+    protect,
     upload.single("image"),
     getProductRules,
     updateProductRules,
     validate,
     updateProduct,
   )
-  .delete(getProductRules, validate, deleteProduct);
+  .delete(protect, getProductRules, validate, deleteProduct);
 
 export default router;

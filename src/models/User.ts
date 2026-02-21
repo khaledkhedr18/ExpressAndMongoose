@@ -1,5 +1,7 @@
 import mongoose, { Schema, Document, Query } from "mongoose";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import config from "../config/env.js";
 
 export interface IUser extends Document {
   firstName: string;
@@ -12,6 +14,8 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   fullName: string;
+  comparePassword(candidatePassword: string): Promise<boolean>;
+  generateAuthToken(): string;
 }
 
 const userSchema = new Schema<IUser>(
@@ -45,7 +49,7 @@ const userSchema = new Schema<IUser>(
       type: Number,
       min: [0, "Age cannot be negative-"],
       max: [100, "Age cannot exceed 100"],
-      default: 24
+      default: 24,
     },
     role: {
       type: String,
@@ -78,7 +82,7 @@ userSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-userSchema.pre<IUser>("save", async function () {
+userSchema.pre("save", async function () {
   if (!this.isModified("password")) {
     return;
   }
@@ -86,6 +90,21 @@ userSchema.pre<IUser>("save", async function () {
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
 });
+
+userSchema.methods.comparePassword = async function (
+  candidatePassword: string,
+): Promise<boolean> {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.methods.generateAuthToken = function (): string {
+  const secret = config.jwtSecret!;
+  const expire = config.jwtExpire as jwt.SignOptions["expiresIn"];
+
+  return jwt.sign({ userId: this.id }, secret, {
+    expiresIn: expire,
+  });
+};
 
 userSchema.pre(/^find/, function (this: Query<IUser[], IUser>) {
   this.where({ isActive: true });

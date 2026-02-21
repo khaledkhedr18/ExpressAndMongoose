@@ -12,6 +12,7 @@ import config from "./config/env.js";
 import productRoutes from "./routes/productRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 
 import { logger } from "./middleware/logger.js";
 import notFound from "./middleware/notFound.js";
@@ -79,6 +80,7 @@ app.get("/api/about", (req: Request, res: Response) => {
   });
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/categories", categoryRoutes);
