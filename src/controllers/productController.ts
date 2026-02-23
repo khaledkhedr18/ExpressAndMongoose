@@ -3,8 +3,6 @@ import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import AppError from "../utils/AppError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
-import fs from "fs";
-import path from "path";
 import { AuthRequest } from "../middleware/auth.js";
 
 /**
@@ -19,7 +17,7 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
     req.query as Record<string, string>,
   )
     .filter()
-    .search(["name", "description"])
+    .search(["name", "description", "brand", "tags"])
     .sort()
     .selectFields()
     .paginate();
@@ -59,7 +57,6 @@ export const getProduct = asyncHandler(
 
     res.status(200).json({
       success: true,
-      message: `Item with id: ${req.params.id} was found!`,
       data: product,
     });
   },
@@ -68,33 +65,16 @@ export const getProduct = asyncHandler(
 /**
  * @desc Create a new product.
  * @route POST /api/product
- * @access Public
+ * @access Private
  */
 
 export const createProduct = asyncHandler(
   async (req: Request, res: Response) => {
-    const authReq = req as AuthRequest;
-
-    req.body.createdBy = authReq.user?.userId;
-
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-
-    if (files?.image) {
-      req.body.image = files.image[0].filename;
-    }
-
-    if (files?.gallery) {
-      req.body.images = files.gallery.map((file) => file.filename);
-    }
-
-    if (req.file) {
-      req.body.image = req.file.filename;
-    }
-
     const product = await Product.create(req.body);
+
     res.status(201).json({
       success: true,
-      message: `Product created with name: ${product.name}`,
+      message: `Product created: ${product.name}`,
       data: product,
     });
   },
@@ -103,7 +83,7 @@ export const createProduct = asyncHandler(
 /**
  * @desc Delete a certain product using its id.
  * @route DELETE /api/product/:id
- * @access Public
+ * @access Private
  */
 
 export const deleteProduct = asyncHandler(
@@ -112,7 +92,7 @@ export const deleteProduct = asyncHandler(
 
     if (!product) {
       return next(
-        new AppError(`Couldn't find product with id: ${req.params}`, 404),
+        new AppError(`Couldn't find product with id: ${req.params.id}`, 404),
       );
     }
 
@@ -126,33 +106,11 @@ export const deleteProduct = asyncHandler(
 /**
  * @desc Update a certain product using its id.
  * @route PATCH /api/product/:id
- * @access Public
+ * @access Private
  */
 
 export const updateProduct = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const existingProduct = await Product.findById(req.params.id);
-
-    if (!existingProduct) {
-      return next(new AppError("Product not found", 404));
-    }
-
-    if (req.file) {
-      if (
-        existingProduct.image &&
-        existingProduct.image !== "default-product.png"
-      ) {
-        const oldImagePath = path.join(
-          "uploads/products",
-          existingProduct.image,
-        );
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
-      }
-      req.body.image = req.file.filename;
-    }
-
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -160,7 +118,7 @@ export const updateProduct = asyncHandler(
 
     if (!product) {
       return next(
-        new AppError(`Couldn't find product with id: ${req.params}`, 404),
+        new AppError(`Couldn't find product with id: ${req.params.id}`, 404),
       );
     }
 

@@ -1,111 +1,230 @@
 import mongoose, { Schema, Document, Query } from "mongoose";
 
-export interface IReview {
-  user: mongoose.Types.ObjectId;
-  rating: number;
-  comment: string;
-  createdAt: Date;
+export interface IVariantImage {
+  url: string;
+  view: string;
+}
+
+export interface IVariantSize {
+  size: string;
+  sku: string;
+  stock: number;
+  price: number;
+}
+
+export interface IVariantColor {
+  name: string;
+  hex: string;
+}
+
+export interface IVariant {
+  variantId: string;
+  color: IVariantColor;
+  images: IVariantImage[];
+  sizes: IVariantSize[];
+}
+
+export interface ISizeGuideEntry {
+  size: string;
+  chest: number;
+  length: number;
+}
+
+export interface ISizeGuide {
+  unit: string;
+  chart: ISizeGuideEntry[];
+}
+
+export interface IRatings {
+  average: number;
+  count: number;
 }
 
 export interface IProduct extends Document {
   name: string;
-  price: number;
-  description?: string;
-  category: mongoose.Types.ObjectId;
-  createdBy: mongoose.Types.ObjectId;
-  quantity: number;
-  inStock: boolean;
   slug: string;
-  reviews: IReview[];
-  image: string;
-  images: string[];
-  averageRating: number;
+  description?: string;
+  category: string;
+  brand: string;
+  tags: string[];
+  gender: string;
+  variants: IVariant[];
+  basePrice: number;
+  currency: string;
+  discountPercent: number;
+  sizeGuide?: ISizeGuide;
+  material?: string;
+  careInstructions: string[];
+  ratings: IRatings;
+  status: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const reviewSchema = new Schema<IReview>(
+const variantImageSchema = new Schema<IVariantImage>(
   {
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Review must belong to a user"],
-    },
+    url: { type: String, required: [true, "Image URL is required"] },
+    view: { type: String, required: [true, "Image view is required"] },
+  },
+  { _id: false },
+);
 
-    rating: {
-      type: Number,
-      required: [true, "Review must have a rating"],
-      min: [1, "Rating must be at least 1"],
-      max: [5, "Rating cannot exceed 5"],
-    },
-    comment: {
-      type: String,
-      maxlength: [500, "Comment cannot exceed 500 characters"],
-    },
-  },
+const variantSizeSchema = new Schema<IVariantSize>(
   {
-    timestamps: true,
+    size: { type: String, required: [true, "Size is required"] },
+    sku: { type: String, required: [true, "SKU is required"] },
+    stock: {
+      type: Number,
+      required: [true, "Stock is required"],
+      min: [0, "Stock cannot be negative"],
+    },
+    price: {
+      type: Number,
+      required: [true, "Price is required"],
+      min: [0, "Price cannot be negative"],
+    },
   },
+  { _id: false },
+);
+
+const variantColorSchema = new Schema<IVariantColor>(
+  {
+    name: { type: String, required: [true, "Color name is required"] },
+    hex: { type: String, required: [true, "Color hex is required"] },
+  },
+  { _id: false },
+);
+
+const variantSchema = new Schema<IVariant>(
+  {
+    variantId: { type: String, required: [true, "Variant ID is required"] },
+    color: {
+      type: variantColorSchema,
+      required: [true, "Variant color is required"],
+    },
+    images: {
+      type: [variantImageSchema],
+      validate: {
+        validator: (arr: IVariantImage[]) => arr.length <= 10,
+        message: "Cannot have more than 10 images per variant",
+      },
+    },
+    sizes: {
+      type: [variantSizeSchema],
+      required: [true, "At least one size is required"],
+      validate: {
+        validator: (arr: IVariantSize[]) => arr.length > 0,
+        message: "At least one size entry is required",
+      },
+    },
+  },
+  { _id: false },
+);
+
+const sizeGuideEntrySchema = new Schema<ISizeGuideEntry>(
+  {
+    size: { type: String, required: true },
+    chest: { type: Number, required: true },
+    length: { type: Number, required: true },
+  },
+  { _id: false },
+);
+
+const sizeGuideSchema = new Schema<ISizeGuide>(
+  {
+    unit: { type: String, default: "cm" },
+    chart: { type: [sizeGuideEntrySchema], default: [] },
+  },
+  { _id: false },
+);
+
+const ratingsSchema = new Schema<IRatings>(
+  {
+    average: { type: Number, default: 0, min: 0, max: 5 },
+    count: { type: Number, default: 0, min: 0 },
+  },
+  { _id: false },
 );
 
 const productSchema = new Schema<IProduct>(
   {
     name: {
       type: String,
-      required: [true, "Product Name is required!"],
+      required: [true, "Product name is required"],
       trim: true,
-      maxlength: [100, "Product Name cannot exceed 100 characters!"],
+      maxlength: [150, "Product name cannot exceed 150 characters"],
     },
     slug: {
       type: String,
       unique: true,
     },
-    quantity: {
-      type: Number,
-      required: true,
-    },
-    price: {
-      type: Number,
-      required: [true, "Product price is required!"],
-      min: [0, "Product price should be a positive number!"],
-    },
     description: {
       type: String,
-      maxlength: [500, "Description Length cannot exceed 500 characters!"],
+      maxlength: [1000, "Description cannot exceed 1000 characters"],
     },
     category: {
-      type: Schema.Types.ObjectId,
-      ref: "Category",
-      required: [true, "Product category is required!"],
+      type: String,
+      required: [true, "Product category is required"],
+      trim: true,
     },
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Product must have a creator"],
+    brand: {
+      type: String,
+      required: [true, "Brand is required"],
+      trim: true,
     },
-    inStock: {
-      type: Boolean,
-      default: true,
+    tags: {
+      type: [String],
+      default: [],
     },
-    reviews: [reviewSchema],
-    averageRating: {
+    gender: {
+      type: String,
+      enum: ["male", "female", "unisex"],
+      default: "unisex",
+    },
+    variants: {
+      type: [variantSchema],
+      required: [true, "At least one variant is required"],
+      validate: {
+        validator: (arr: IVariant[]) => arr.length > 0,
+        message: "At least one variant is required",
+      },
+    },
+    basePrice: {
+      type: Number,
+      required: [true, "Base price is required"],
+      min: [0, "Base price cannot be negative"],
+    },
+    currency: {
+      type: String,
+      default: "USD",
+      uppercase: true,
+    },
+    discountPercent: {
       type: Number,
       default: 0,
-      min: 0,
-      max: 5,
+      min: [0, "Discount cannot be negative"],
+      max: [100, "Discount cannot exceed 100%"],
     },
-    image: {
+    sizeGuide: {
+      type: sizeGuideSchema,
+      default: undefined,
+    },
+    material: {
       type: String,
-      default: "default-product.png",
+      trim: true,
     },
-    images: {
+    careInstructions: {
       type: [String],
-      validate: {
-        validator: function (arr: string[]) {
-          return arr.length <= 5;
-        },
-        message: "Cannort have more than 5 images",
-      },
+      default: [],
+    },
+    ratings: {
+      type: ratingsSchema,
+      default: () => ({ average: 0, count: 0 }),
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "draft"],
+      default: "active",
     },
   },
   {
@@ -124,39 +243,8 @@ productSchema.pre("save", function () {
   }
 });
 
-productSchema.pre("save", function () {
-  if (this.quantity === 0) {
-    this.inStock = false;
-  }
-});
-
-productSchema.pre(/^find/, function (this: Query<any, IProduct>) {
-  this.populate("category", "name").populate(
-    "createdBy",
-    "firstName lastName email",
-  );
-});
-
-productSchema.pre(/^find/, function (this: Query<IProduct[], IProduct>) {
-  this.where({ inStock: true });
-});
-
 productSchema.post("save", function (doc) {
-  console.log(`Product ${doc.name} was saved with id: ${doc._id}`);
-});
-
-productSchema.post("save", async function (doc) {
-  if (doc.reviews.length > 0) {
-    const totalRating = doc.reviews.reduce((sum: number, review: IReview) => {
-      return sum + review.rating;
-    }, 0);
-    doc.averageRating = totalRating / doc.reviews.length;
-  }
-
-  await Product.updateOne(
-    { _id: doc._id },
-    { averageRating: doc.averageRating },
-  );
+  console.log(`Product "${doc.name}" saved with id: ${doc._id}`);
 });
 
 const Product = mongoose.model<IProduct>("Product", productSchema);
