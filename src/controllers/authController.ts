@@ -58,7 +58,7 @@ export const login = asyncHandler(
       return next(new AppError(`Please provide email and password`, 400));
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return next(new AppError(`Invalid email or password`, 401));
     }
