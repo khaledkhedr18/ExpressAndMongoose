@@ -14,6 +14,12 @@ interface Config {
   isProduction: boolean;
   isTest: boolean;
   allowedApps: string[];
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPassword: string;
+  emailFrom: string;
+  otpExpiresMinutes: number;
 }
 
 const config: Config = {
@@ -28,6 +34,12 @@ const config: Config = {
   isProduction: process.env.NODE_ENV === "production",
   isTest: process.env.NODE_ENV === "test",
   allowedApps: JSON.parse(process.env.ALLOWED_APPS || "[]"),
+  smtpHost: process.env.SMTP_HOST || "smtp.gmail.com",
+  smtpPort: parseInt(process.env.SMTP_PORT || "587", 10),
+  smtpUser: process.env.SMTP_USER || "",
+  smtpPassword: process.env.SMTP_PASSWORD || "",
+  emailFrom: process.env.EMAIL_FROM || process.env.SMTP_USER || "",
+  otpExpiresMinutes: parseInt(process.env.OTP_EXPIRES_MINUTES || "10", 10),
 };
 
 const requiredVars = ["MONGO_URI", "JWT_SECRET"];

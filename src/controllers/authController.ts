@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
+import bcrypt from "bcrypt";
 import User from "../models/User.js";
 import AppError from "../utils/AppError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { AuthRequest } from "../middleware/auth.js";
+import { generateOtp, sendPasswordResetOtp } from "../utils/sendEmail.js";
 import { appendFile } from "node:fs";
 
 /**
@@ -142,6 +144,135 @@ export const updatePassword = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Password updated successfully",
+      token,
+    });
+  },
+);
+
+/**
+ * @desc    Send password reset OTP to user's email
+ * @route   POST /api/auth/forgot-password
+ * @access  Public
+ */
+export const forgotPassword = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(new AppError("No user found with this email address", 404));
+    }
+
+    const otp = generateOtp();
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(otp, salt);
+
+    user.passwordResetOtp = hashedOtp;
+    user.passwordResetOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    user.passwordResetVerified = false;
+    await user.save({ validateBeforeSave: false });
+
+    try {
+      await sendPasswordResetOtp(email, otp);
+    } catch (error) {
+      user.passwordResetOtp = undefined;
+      user.passwordResetOtpExpires = undefined;
+      user.passwordResetVerified = false;
+      await user.save({ validateBeforeSave: false });
+      return next(
+        new AppError("Failed to send reset email. Please try again later", 500),
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent to your email address",
+    });
+  },
+);
+
+/**
+ * @desc    Verify the OTP sent to the user's email
+ * @route   POST /api/auth/verify-otp
+ * @access  Public
+ */
+export const verifyOtp = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email }).select(
+      "+passwordResetOtp +passwordResetOtpExpires +passwordResetVerified",
+    );
+
+    if (!user) {
+      return next(new AppError("No user found with this email address", 404));
+    }
+
+    if (!user.passwordResetOtp || !user.passwordResetOtpExpires) {
+      return next(
+        new AppError("No password reset was requested for this account", 400),
+      );
+    }
+
+    if (user.passwordResetOtpExpires < new Date()) {
+      user.passwordResetOtp = undefined;
+      user.passwordResetOtpExpires = undefined;
+      user.passwordResetVerified = false;
+      await user.save({ validateBeforeSave: false });
+      return next(
+        new AppError("OTP has expired. Please request a new one", 400),
+      );
+    }
+
+    const isOtpValid = await bcrypt.compare(otp, user.passwordResetOtp);
+    if (!isOtpValid) {
+      return next(new AppError("Invalid OTP", 400));
+    }
+
+    user.passwordResetVerified = true;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      message: "OTP verified successfully",
+    });
+  },
+);
+
+/**
+ * @desc    Reset password after OTP verification
+ * @route   PATCH /api/auth/reset-password
+ * @access  Public
+ */
+export const resetPassword = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email, newPassword } = req.body;
+
+    const user = await User.findOne({ email }).select(
+      "+passwordResetOtp +passwordResetOtpExpires +passwordResetVerified",
+    );
+
+    if (!user) {
+      return next(new AppError("No user found with this email address", 404));
+    }
+
+    if (!user.passwordResetVerified) {
+      return next(
+        new AppError("OTP has not been verified. Please verify first", 400),
+      );
+    }
+
+    user.password = newPassword;
+    user.passwordResetOtp = undefined;
+    user.passwordResetOtpExpires = undefined;
+    user.passwordResetVerified = false;
+    await user.save();
+
+    const token = user.generateAuthToken();
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
       token,
     });
   },

@@ -11,6 +11,9 @@ export interface IUser extends Document {
   age: number;
   role: "user" | "admin" | "moderator";
   isActive: boolean;
+  passwordResetOtp?: string;
+  passwordResetOtpExpires?: Date;
+  passwordResetVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
   fullName: string;
@@ -68,6 +71,19 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters"],
+      select: false,
+    },
+    passwordResetOtp: {
+      type: String,
+      select: false,
+    },
+    passwordResetOtpExpires: {
+      type: Date,
+      select: false,
+    },
+    passwordResetVerified: {
+      type: Boolean,
+      default: false,
       select: false,
     },
   },
